@@ -1,0 +1,130 @@
+{#
+	MACRO list_sections
+#}
+{% macro list_sections( parent , style ) %}
+{% set queried_object_id = fn( 'get_queried_object' ).ID %}
+{% set terms = fn( 'get_terms' , {
+									'taxonomy': 'section',
+									'hide_empty': false  ,
+                                    'orderby' : 'meta_value_num' ,
+                                    'meta_query': [
+                                                    {
+                                                      'key' : 'ordering',
+                                                      'type' : 'NUMERIC'
+                                                    }
+                                    ],
+                                    'order' : 'ASC'  } , false )
+%}
+{% for term in terms %}
+{% set posts = fn( 'get_posts' ,
+						{
+							'post_type' : 'docs',
+							'tax_query' : {
+								'category_clause' : {
+									'taxonomy' : 'section',
+									'field'	   : 'slug',
+									'terms'	   : [ term.slug ],
+									'operator' : 'IN',
+									'include_children' : false
+								}
+							},
+							'numberposts' : -1,
+							'orderby' : 'menu_order',
+							'order'	  : 'ASC',
+							'post_parent' : parent|default( parent ),
+						 }
+					)
+	%}
+{% if posts|length > 0 %}
+	<ul class="uk-margin-top uk-margin-top uk-nav-default uk-nav-parent-icon" uk-nav>
+{% if style|default('close') == 'open' %}
+	<li class="uk-nav-header uk-text-bold">{{ term.name }}</li>
+	<li class="uk-nav-divider"></li>
+	{% for item in posts %}
+		{% set item = Post( item.ID ) %}
+		<li{{item.id == fn( 'get_queried_object' ).ID ? " class=\"uk-active\"":""}}><a href="{{ item.link }}">{{ item.title }}</a></li>
+	{% endfor %}
+{% else %}
+	<li class="uk-parent{{ term.slug in fn( 'get_the_terms' , queried_object_id , 'section' )|map( n => "%#{n.slug}%")|join(',') ?' uk-open'}}">
+		<a href="#">{{ term.name }}</a>
+		<ul class="uk-nav-sub">
+	{% for item in posts %}
+		{% set item = Post(item.ID) %}
+			<li{{ item.id == queried_object_id ? " class=\"uk-active\"":""}}>
+				<a href="{{item.link}}">{{item.title}}</a>
+			</li>
+	{% endfor %}
+		</ul>
+	</li>
+{% endif %}
+	</ul>
+{% endif %}
+{% endfor %}
+{% endmacro %}
+{#
+
+	MACRO breadcrumbs
+
+#}
+{% macro breadcrumbs( post ) %}
+	{% set ancestors = function('get_post_ancestors', post.ID ) %}
+	{% set ancpermalink = function('get_permalink' , ancestors|first) %}
+	{% set seperator = '  <span uk-icon="chevron-right"></span>  ' %}
+	{% for item in ancestors %}
+		<a href="{{ancpermalink}}">{{function('get_the_title', item )}}</a>{{seperator}}
+	{% endfor %}
+	    <a href="{{ancpermalink}}#{% for term in post.terms %}{{term.taxonomy == 'section'?term.slug}}{% endfor %}">{% for term in post.terms %}{{term.taxonomy == 'section'?term.name}}{% endfor%}</a>{{seperator}}
+	    <a href="{{post.link}}">{{post.title}}</a>
+{% endmacro %}
+{#
+	MACRO box_sections_overview
+
+#}
+{% macro box_sections_overview( parent ) %}
+{% set queried_object_id = fn( 'get_queried_object' ).ID %}
+{% set terms = fn( 'get_terms' , {
+									'taxonomy': 'section',
+									'hide_empty': false ,
+                                    'orderby' : 'meta_value_num' ,
+                                    'meta_query': [
+                                                    {
+                                                      'key' : 'ordering',
+                                                      'type' : 'NUMERIC'
+                                                    }
+                                    ],
+                                    'order' : 'ASC'  } , false )
+%}
+<div class="uk-child-width-1-1 uk-grid-match uk-child-width-1-3@s box-sections" uk-grid>
+{% for term in terms %}
+	{% set posts = fn( 'get_posts' ,
+						{
+							'post_type' : 'docs',
+							'tax_query' : {
+								'section_clause' : {
+									'taxonomy' : 'section',
+									'field'	   : 'slug',
+									'terms'	   : [ term.slug ],
+									'operator' : 'IN',
+									'include_children' : false
+								}
+							},
+							'numberposts' : -1,
+							'orderby' : 'menu_order',
+							'order'	  : 'ASC',
+							'post_parent' : parent|default( 848 ),
+						 }
+					)
+	%}
+	{% if posts|length > 0 %}
+		{% set first = Post( posts|first.ID )%}
+			<a href="{{ first.link }}" class="section">
+				<div class="uk-card uk-card-default uk-card-body uk-box-shadow-hover-large">
+				<div class="uk-h3 uk-text-center heading">{{term.name}}</div>
+				<div class="uk-text-center description">{{term.description}}</div>
+				<div class="uk-text-center uk-margin-small-top num-articles">{{posts|length}} article{{posts|length > 1 ? 's' }}</div>
+				</div>
+			</a>
+	{% endif %}
+{% endfor %}
+</div>
+{% endmacro %}

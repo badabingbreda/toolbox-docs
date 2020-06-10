@@ -1,0 +1,7 @@
+{% import "toolboxdocs-macros.twig" as macros %}
+{{
+    macros.list_sections( __node__.parent_post|default(0) , {
+
+                        'introduction' : 'Introduction',
+                         } , __node__.style|default( 'close' ) )
+}}

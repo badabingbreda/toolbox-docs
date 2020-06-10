@@ -1,0 +1,4 @@
+{% import "toolboxdocs-macros.twig" as macros %}
+{{
+    macros.box_sections_overview( __node__.parent_post|default(0) , __node__.style|default('close') )
+}}
